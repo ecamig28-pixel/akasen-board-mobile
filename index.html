@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e1263f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>赤入れボード Mobile</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">✎</span>
+        <div>
+          <h1>赤入れボード</h1>
+          <p>Android版</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <label class="icon-button open-button" for="imageInput" aria-label="画像を選ぶ">画像</label>
+        <input id="imageInput" type="file" accept="image/*" hidden>
+        <button id="undoButton" class="icon-button" type="button" aria-label="戻す" disabled>↶</button>
+        <button id="redoButton" class="icon-button" type="button" aria-label="進む" disabled>↷</button>
+        <button id="deleteButton" class="icon-button danger" type="button" aria-label="選択した書き込みを削除" disabled>⌫</button>
+        <button id="clearButton" class="visually-hidden" type="button" disabled>書き込みを消す</button>
+        <button id="copyButton" class="share-button" type="button" disabled>共有</button>
+      </div>
+    </header>
+
+    <div class="zoombar" aria-label="表示倍率">
+      <button id="zoomOutButton" type="button" aria-label="縮小" disabled>−</button>
+      <button id="zoomFitAllButton" type="button" disabled>全体</button>
+      <button id="zoomFitWidthButton" class="active" type="button" disabled>幅</button>
+      <button id="zoomActualButton" type="button" disabled>100%</button>
+      <button id="zoomInButton" type="button" aria-label="拡大" disabled>＋</button>
+      <span id="zoomValue">—</span>
+    </div>
+
+    <main id="stage" class="stage" aria-label="赤入れキャンバス">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">▧</div>
+        <h2>スクショを選ぶ</h2>
+        <p>撮ったスクリーンショットを読み込んで、指でそのまま赤入れできます。</p>
+        <label class="primary-button" for="imageInput">画像を選ぶ</label>
+      </div>
+
+      <div id="canvasWrap" class="canvas-wrap" hidden>
+        <canvas id="board" tabindex="0" aria-label="スクリーンショット書き込み領域"></canvas>
+      </div>
+    </main>
+
+    <nav class="toolrail" aria-label="書き込みツール">
+      <button class="tool-button" type="button" data-tool="select" aria-label="スクロールと選択">
+        <span class="tool-glyph">☝</span><span>選択</span>
+      </button>
+      <button class="tool-button active" type="button" data-tool="pin" aria-label="番号を置く">
+        <span class="tool-glyph circled">①</span><span>番号</span>
+      </button>
+      <button class="tool-button" type="button" data-tool="circle" aria-label="丸で囲む">
+        <span class="tool-glyph">○</span><span>丸</span>
+      </button>
+      <button class="tool-button" type="button" data-tool="box" aria-label="四角で囲む">
+        <span class="tool-glyph">□</span><span>四角</span>
+      </button>
+      <button class="tool-button" type="button" data-tool="line" aria-label="フリーハンドで描く">
+        <span class="tool-glyph slash">／</span><span>線</span>
+      </button>
+      <button class="tool-button" type="button" data-tool="text" aria-label="文章を置く">
+        <span class="tool-glyph text">あ</span><span>文章</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="textSheet" class="text-sheet" hidden>
+    <div class="text-sheet-card">
+      <label for="textEditor">指示を書く</label>
+      <textarea id="textEditor" rows="4" placeholder="例：この見出しを削除"></textarea>
+      <div class="text-sheet-actions">
+        <button id="textCancelButton" type="button">キャンセル</button>
+        <button id="textDoneButton" class="primary-button" type="button">置く</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
