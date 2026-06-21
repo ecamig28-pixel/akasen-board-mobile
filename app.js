@@ -4,6 +4,10 @@
   const RED = "#e1263f";
   const INK = "#17202a";
   const PAPER = "#fbfaf7";
+  const PIN_RADIUS_FACTOR = 1.56;
+  const PIN_HIT_FACTOR = 2.35;
+  const STROKE_FACTOR = 0.32;
+  const PATH_HIT_FACTOR = 1.15;
 
   const canvas = document.getElementById("board");
   const ctx = canvas.getContext("2d");
@@ -259,22 +263,22 @@
   }
 
   function drawAnnotation(context, annotation, withSelection) {
-    const strokeWidth = Math.max(4, unit * 0.16);
+    const strokeWidth = Math.max(8, unit * STROKE_FACTOR);
     context.save();
     context.lineCap = "round";
     context.lineJoin = "round";
 
     if (annotation.type === "pin") {
-      const radius = unit * 0.78;
+      const radius = unit * PIN_RADIUS_FACTOR;
       context.beginPath();
       context.arc(annotation.x, annotation.y, radius, 0, Math.PI * 2);
       context.fillStyle = RED;
       context.fill();
-      context.lineWidth = Math.max(3, unit * 0.1);
+      context.lineWidth = Math.max(4, unit * 0.14);
       context.strokeStyle = "#ffffff";
       context.stroke();
       context.fillStyle = "#ffffff";
-      context.font = `800 ${Math.round(unit * 0.9)}px Arial, sans-serif`;
+      context.font = `800 ${Math.round(unit * 1.6)}px Arial, sans-serif`;
       context.textAlign = "center";
       context.textBaseline = "middle";
       context.fillText(String(annotation.number), annotation.x, annotation.y + unit * 0.04);
@@ -373,6 +377,28 @@
           handleSize
         );
       }
+
+      const moveHandle = getMoveHandle(annotation, context);
+      const handleRadius = unit * 1.15;
+      context.setLineDash([]);
+      context.beginPath();
+      context.moveTo(moveHandle.x, moveHandle.anchorY);
+      context.lineTo(moveHandle.x, moveHandle.y);
+      context.strokeStyle = "#2079d4";
+      context.lineWidth = Math.max(3, unit * 0.1);
+      context.stroke();
+      context.beginPath();
+      context.arc(moveHandle.x, moveHandle.y, handleRadius, 0, Math.PI * 2);
+      context.fillStyle = "#2079d4";
+      context.fill();
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = Math.max(3, unit * 0.1);
+      context.stroke();
+      context.fillStyle = "#ffffff";
+      context.font = `800 ${Math.round(unit * 1.25)}px Arial, sans-serif`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText("✥", moveHandle.x, moveHandle.y + unit * 0.03);
     }
 
     context.restore();
@@ -412,7 +438,7 @@
 
   function getBounds(annotation, context = ctx) {
     if (annotation.type === "pin") {
-      const radius = unit * 0.8;
+      const radius = unit * PIN_RADIUS_FACTOR;
       return { x: annotation.x - radius, y: annotation.y - radius, width: radius * 2, height: radius * 2 };
     }
     if (annotation.type === "circle" || annotation.type === "box" || annotation.type === "line") {
@@ -454,7 +480,7 @@
 
   function containsPoint(annotation, point) {
     if (annotation.type === "pin") {
-      return Math.hypot(point.x - annotation.x, point.y - annotation.y) <= unit;
+      return Math.hypot(point.x - annotation.x, point.y - annotation.y) <= unit * PIN_HIT_FACTOR;
     }
 
     if (annotation.type === "line") {
@@ -462,12 +488,12 @@
         point,
         { x: annotation.x1, y: annotation.y1 },
         { x: annotation.x2, y: annotation.y2 }
-      ) <= unit * 0.45;
+      ) <= unit * PATH_HIT_FACTOR;
     }
 
     if (annotation.type === "freehand") {
       for (let index = 1; index < annotation.points.length; index += 1) {
-        if (pointToSegmentDistance(point, annotation.points[index - 1], annotation.points[index]) <= unit * 0.45) {
+        if (pointToSegmentDistance(point, annotation.points[index - 1], annotation.points[index]) <= unit * PATH_HIT_FACTOR) {
           return true;
         }
       }
@@ -492,8 +518,9 @@
         point.y >= bounds.y && point.y <= bounds.y + bounds.height;
     }
 
-    return point.x >= bounds.x && point.x <= bounds.x + bounds.width &&
-      point.y >= bounds.y && point.y <= bounds.y + bounds.height;
+    const hitPadding = unit * 0.9;
+    return point.x >= bounds.x - hitPadding && point.x <= bounds.x + bounds.width + hitPadding &&
+      point.y >= bounds.y - hitPadding && point.y <= bounds.y + bounds.height + hitPadding;
   }
 
   function hitTest(point) {
@@ -510,6 +537,23 @@
     const handleX = bounds.x + bounds.width;
     const handleY = bounds.y + bounds.height;
     return Math.hypot(point.x - handleX, point.y - handleY) <= unit * 0.75 ? annotation : null;
+  }
+
+  function getMoveHandle(annotation, context = ctx) {
+    const bounds = getBounds(annotation, context);
+    const placeAbove = bounds.y >= unit * 3;
+    return {
+      x: bounds.x + bounds.width / 2,
+      y: placeAbove ? bounds.y - unit * 1.55 : bounds.y + bounds.height + unit * 1.55,
+      anchorY: placeAbove ? bounds.y - unit * 0.22 : bounds.y + bounds.height + unit * 0.22
+    };
+  }
+
+  function hitSelectedMoveHandle(point) {
+    const annotation = annotations.find((item) => item.id === selectedId);
+    if (!annotation) return null;
+    const handle = getMoveHandle(annotation);
+    return Math.hypot(point.x - handle.x, point.y - handle.y) <= unit * 2.5 ? annotation : null;
   }
 
   function renumberPins() {
@@ -554,6 +598,19 @@
         annotationId: resizeTarget.id,
         startX: point.x,
         startWidth: resizeTarget.width
+      };
+      render();
+      return;
+    }
+
+    const moveHandleTarget = hitSelectedMoveHandle(point);
+    if (moveHandleTarget) {
+      pushHistory();
+      gesture = {
+        type: "move",
+        pointerId: event.pointerId,
+        last: point,
+        annotationId: moveHandleTarget.id
       };
       render();
       return;
@@ -1004,3 +1061,4 @@
   setTool("pin");
   updateActions();
 })();
+
