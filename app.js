@@ -358,8 +358,8 @@
         bounds.width + unit * 0.44,
         bounds.height + unit * 0.44
       );
-      if (annotation.type === "text") {
-        const handleSize = unit * 0.48;
+      if (annotation.type === "text" || annotation.type === "circle" || annotation.type === "box") {
+        const handleSize = unit * 1.1;
         context.setLineDash([]);
         context.fillStyle = "#2079d4";
         context.fillRect(
@@ -530,22 +530,24 @@
     return null;
   }
 
-  function hitSelectedTextResizeHandle(point) {
-    const annotation = annotations.find((item) => item.id === selectedId && item.type === "text");
+  function hitSelectedResizeHandle(point) {
+    const annotation = annotations.find((item) => (
+      item.id === selectedId &&
+      (item.type === "text" || item.type === "circle" || item.type === "box")
+    ));
     if (!annotation) return null;
     const bounds = getBounds(annotation);
     const handleX = bounds.x + bounds.width;
     const handleY = bounds.y + bounds.height;
-    return Math.hypot(point.x - handleX, point.y - handleY) <= unit * 0.75 ? annotation : null;
+    return Math.hypot(point.x - handleX, point.y - handleY) <= unit * 2 ? annotation : null;
   }
 
   function getMoveHandle(annotation, context = ctx) {
     const bounds = getBounds(annotation, context);
-    const placeAbove = bounds.y >= unit * 3;
     return {
       x: bounds.x + bounds.width / 2,
-      y: placeAbove ? bounds.y - unit * 1.55 : bounds.y + bounds.height + unit * 1.55,
-      anchorY: placeAbove ? bounds.y - unit * 0.22 : bounds.y + bounds.height + unit * 0.22
+      y: bounds.y + bounds.height + unit * 2.6,
+      anchorY: bounds.y + bounds.height + unit * 0.22
     };
   }
 
@@ -589,11 +591,18 @@
     canvas.focus();
     canvas.setPointerCapture(event.pointerId);
 
-    const resizeTarget = hitSelectedTextResizeHandle(point);
+    const resizeTarget = hitSelectedResizeHandle(point);
     if (resizeTarget) {
       pushHistory();
+      if (resizeTarget.type === "circle" || resizeTarget.type === "box") {
+        const bounds = getBounds(resizeTarget);
+        resizeTarget.x1 = bounds.x;
+        resizeTarget.y1 = bounds.y;
+        resizeTarget.x2 = bounds.x + bounds.width;
+        resizeTarget.y2 = bounds.y + bounds.height;
+      }
       gesture = {
-        type: "resize-text",
+        type: resizeTarget.type === "text" ? "resize-text" : "resize-shape",
         pointerId: event.pointerId,
         annotationId: resizeTarget.id,
         startX: point.x,
@@ -732,6 +741,15 @@
         unit * 5,
         maximumWidth
       );
+      render();
+      return;
+    }
+
+    if (gesture.type === "resize-shape") {
+      const annotation = annotations.find((item) => item.id === gesture.annotationId);
+      if (!annotation) return;
+      annotation.x2 = Math.max(annotation.x1 + unit * 1.5, point.x);
+      annotation.y2 = Math.max(annotation.y1 + unit * 1.5, point.y);
       render();
       return;
     }
