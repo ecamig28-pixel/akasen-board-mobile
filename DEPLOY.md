@@ -2,7 +2,7 @@
 
 ## 接続先
 
-- ローカル: `C:\Users\kayo\Documents\Codex\2026-06-20\new-chat\outputs\akasen-board-mobile`
+- ローカル（正式な保存先）: `C:\Users\kayo\OneDrive\ドキュメント\アプリ制作`
 - GitHub: `ecamig28-pixel/akasen-board-mobile`
 - 公開: GitHub の `main` ブランチに接続済みの Vercel
 
